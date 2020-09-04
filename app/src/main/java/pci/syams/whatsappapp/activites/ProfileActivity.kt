@@ -1,30 +1,33 @@
 package pci.syams.whatsappapp.activites
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import cmd.ushiramaru.weap.utils.Constants
-import cmd.ushiramaru.weap.utils.Constants.DATA_IMAGES
-import cmd.ushiramaru.weap.utils.User
+import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.theartofdev.edmodo.cropper.CropImage
 import kotlinx.android.synthetic.main.activity_profile.*
 import pci.syams.whatsappapp.R
+import pci.syams.whatsappapp.utils.Constants.DATA_IMAGES
+import pci.syams.whatsappapp.utils.Constants.DATA_USERS
+import pci.syams.whatsappapp.utils.Constants.DATA_USER_EMAIL
+import pci.syams.whatsappapp.utils.Constants.DATA_USER_IMAGE_URL
+import pci.syams.whatsappapp.utils.Constants.DATA_USER_NAME
+import pci.syams.whatsappapp.utils.Constants.DATA_USER_PHONE
+import pci.syams.whatsappapp.utils.User
 import pci.syams.whatsappapp.utils.populateImage
 import pub.devrel.easypermissions.EasyPermissions
 import java.io.File
@@ -37,14 +40,13 @@ class ProfileActivity : AppCompatActivity() {
     private val firebaseDb = FirebaseFirestore.getInstance()
     private val userId = FirebaseAuth.getInstance().currentUser?.uid
     private val firebaseAuth = FirebaseAuth.getInstance()
-    private val firebaseStorage =
-        FirebaseStorage.getInstance().reference               // mengakses firebase
+    private val firebaseStorage = FirebaseStorage.getInstance().reference
     private var imageUrl: String? = null
-    private var nama: String = ""
-    private var email: String = ""
-    private var phone: String = ""
+    private var nama : String = ""
+    private var email : String = ""
+    private var phone : String = ""
 
-    lateinit var file: File
+    var file: File? = null
 
     private val RC_CAMERA = 1
     val REQUEST_TAKE_PHOTO = 1
@@ -76,7 +78,7 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun populateInfo() {
         progress_layout.visibility = View.VISIBLE
-        firebaseDb.collection(Constants.DATA_USERS)
+        firebaseDb.collection(DATA_USERS)
             .document(userId!!)
             .get()
             .addOnSuccessListener {
@@ -96,86 +98,77 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun onApply() {
+        uploadImage()
         progress_layout.visibility = View.VISIBLE
         val name = edt_name_profile.text.toString()
         val email = edt_email_profile.text.toString()
         val phone = edt_phone_profile.text.toString()
         val map = HashMap<String, Any>()
 
-        map[Constants.DATA_USER_NAME] = name
-        map[Constants.DATA_USER_EMAIL] = email
-        map[Constants.DATA_USER_PHONE] = phone
+        map[DATA_USER_NAME] = name
+        map[DATA_USER_EMAIL] = email
+        map[DATA_USER_PHONE] = phone
 
         if (nama.equals(name) && email.equals(email) && phone.equals(phone)) {
             Toast.makeText(this, "Belum ada data yang diubah", Toast.LENGTH_SHORT).show()
             progress_layout.visibility = View.GONE
         } else {
-            firebaseDb.collection(Constants.DATA_USERS).document(userId!!)
-                .update(map) // perintah update
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Update Successful", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-                .addOnFailureListener { e ->
-                    e.printStackTrace()
-                    Toast.makeText(this, "Update Failed", Toast.LENGTH_SHORT).show()
-                    progress_layout.visibility = View.GONE
-                }
+            if (file == null) {
+                Toast.makeText(this, "Belum ada data gambar", Toast.LENGTH_SHORT).show()
+                progress_layout.visibility = View.GONE
+            } else {
+                firebaseDb.collection(DATA_USERS).document(userId!!).update(map) // perintah update
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Update Successful", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                    .addOnFailureListener { e ->
+                        e.printStackTrace()
+                        Toast.makeText(this, "Update Failed", Toast.LENGTH_SHORT).show()
+                        progress_layout.visibility = View.GONE
+                    }
+            }
         }
     }
 
+    private fun uploadImage() {
+        if (file == null) {
+            Toast.makeText(this, "Masih belum ada image", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @SuppressLint("InflateParams")
     private fun onDelete() {
-        progress_layout.visibility = View.VISIBLE
-        val input = EditText(this@ProfileActivity)
-        val lp = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.MATCH_PARENT
-        )
-        input.layoutParams = lp
-        AlertDialog.Builder(this)                                                             // ketika tombol DELETE diklik, AlertDialog akan muncul
-            .setTitle("Delete Account")                                                              // Title AlertDialog
-            .setMessage("This will delete your Profile Information. Are you sure?")
-            .setView(input)
-            .setPositiveButton("Yes") { dialog, which ->
-                DialogInterface.OnClickListener { dialog, which ->
-                    firebaseDb.collection(Constants.DATA_USERS)
-                        .document(userId!!)
-                        .get()
-                        .addOnSuccessListener {
-                            val user = it.toObject(User::class.java)
-                            val password = user?.password
-                            if (password!!.compareTo(password) == 0) {
-                                if (input.equals(password)) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Password Matched", Toast.LENGTH_SHORT
-                                    ).show();
-                                    firebaseDb.collection(Constants.DATA_USERS).document(userId!!)
-                                        .delete()                                // perintah delete
-                                    Toast.makeText(this, "Profile deleted", Toast.LENGTH_SHORT)
-                                        .show()
-                                    startActivityForResult(
-                                        Intent(this, LoginActivity::class.java),
-                                        0
-                                    )
-                                    finish()
-                                } else {
-                                    Toast.makeText(this, "Wrong Password!", Toast.LENGTH_SHORT)
-                                        .show();
-                                }
-                            }
-                            progress_layout.visibility = View.GONE
-                        }
-                        .addOnFailureListener { e ->
-                            e.printStackTrace()
-                            finish()
-                        }
+        val dialog =  AlertDialog.Builder(this)
+        val inflater = layoutInflater
+        val dialogView = inflater.inflate(R.layout.form_data, null)
+        dialog.setView(dialogView)
+        dialog.setTitle("Hapus akun?")
+        dialog.setPositiveButton("Yes") { _, _ ->
+            val edtPassword : EditText = dialogView.findViewById(R.id.edt_password)
+            val password = edtPassword.text.toString()
+            firebaseDb.collection(DATA_USERS)
+                .document(userId!!)
+                .get()
+                .addOnSuccessListener {
+                    val user = it.toObject(User::class.java)
+                    val pass = user?.password.toString()
+                    if (password.equals(pass)) {
+                        firebaseDb.collection(DATA_USERS).document(userId).delete()
+                        Toast.makeText(applicationContext, "Profile deleted", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(applicationContext, LoginActivity::class.java))
+                        finish()
+                    } else {
+                        Toast.makeText(applicationContext, "Password salah", Toast.LENGTH_SHORT).show()
+                        progress_layout.visibility = View.GONE
+                    }
                 }
-            }.setNegativeButton("No") { dialog, which ->
-                progress_layout.visibility = View.GONE
-            }
-            .setCancelable(false)                                                                           // AlertDialog tidak dapat hilang kecuali menekan buton Yes/No
-            .show()                                                                                         // memunculkan AlertDialog }
+        }
+        dialog.setNegativeButton("No") { _, _ ->
+            progress_layout.visibility = View.GONE
+        }
+        dialog.show()
+        dialog.setCancelable(false)
     }
 
     private fun storeImage(uri: Uri?) {
@@ -188,8 +181,8 @@ class ProfileActivity : AppCompatActivity() {
                     filePath.downloadUrl
                         .addOnSuccessListener {
                             val url = it.toString()
-                            firebaseDb.collection(Constants.DATA_USERS).document(userId)
-                                .update(Constants.DATA_USER_IMAGE_URL, url).addOnSuccessListener {
+                            firebaseDb.collection(DATA_USERS).document(userId)
+                                .update(DATA_USER_IMAGE_URL, url).addOnSuccessListener {
                                     imageUrl = url
                                     populateImage(this, imageUrl, img_profile, R.drawable.ic_user)
                                 }
@@ -203,13 +196,13 @@ class ProfileActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == Activity.RESULT_OK) {
-            var extras: Bundle? = data?.extras
-            var bitmap: Bitmap = extras?.get("data") as Bitmap
+            val extras: Bundle? = data?.extras
+            val bitmap: Bitmap = extras?.get("data") as Bitmap
 
-            var filesDir: File = applicationContext.filesDir
-            var imageFile = File(filesDir, "image" + ".jpg")
+            val filesDir: File = applicationContext.filesDir
+            val imageFile = File(filesDir, "image" + ".jpg")
 
-            var os: OutputStream
+            val os: OutputStream
             try {
                 os = FileOutputStream(imageFile)
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os)
@@ -221,23 +214,22 @@ class ProfileActivity : AppCompatActivity() {
                 Log.e(javaClass.simpleName, "Error writing bitmap", e)
             }
         } else if (requestCode == REQUEST_CHOOSE_PHOTO && resultCode == Activity.RESULT_OK) {
-            var uri: Uri? = data?.data
+            val uri: Uri? = data?.data
 
             CropImage.activity(uri).setAspectRatio(1, 1).start(this)
         }
 
         if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
-            var result: CropImage.ActivityResult = CropImage.getActivityResult(data)
+            val result: CropImage.ActivityResult = CropImage.getActivityResult(data)
             if (resultCode == Activity.RESULT_OK) {
-                var imageUri: Uri = result.uri
+                val imageUri: Uri = result.uri
                 try {
-                    var bitmap: Bitmap =
-                        MediaStore.Images.Media.getBitmap(this.contentResolver, imageUri)
+                    val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, imageUri)
 
-                    var filesDir: File = this.filesDir!!
-                    var imageFile = File(filesDir, "image" + ".jpg")
+                    val filesDir: File = this.filesDir!!
+                    val imageFile = File(filesDir, "image" + ".jpg")
 
-                    var os: OutputStream = FileOutputStream(imageFile)
+                    val os: OutputStream = FileOutputStream(imageFile)
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os)
                     os.flush()
                     os.close()
@@ -249,14 +241,14 @@ class ProfileActivity : AppCompatActivity() {
                     Log.e(javaClass.simpleName, "Error writing bitmap", e)
                     e.printStackTrace()
                 }
+                storeImage(imageUri)
             }
         }
-        storeImage(data?.data)
     }
 
     private fun checkCameraPermission() {
-        var perm: String = Manifest.permission.CAMERA
-        if (this.let { EasyPermissions.hasPermissions(it, perm) }!!) {
+        val perm: String = Manifest.permission.CAMERA
+        if (this.let { EasyPermissions.hasPermissions(it, perm) }) {
         } else {
             EasyPermissions.requestPermissions(this, "Butuh permission camera", RC_CAMERA, perm)
         }
@@ -271,3 +263,4 @@ class ProfileActivity : AppCompatActivity() {
     }
 
 }
+

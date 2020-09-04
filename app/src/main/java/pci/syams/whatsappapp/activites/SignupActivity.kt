@@ -8,13 +8,13 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
-import cmd.ushiramaru.weap.utils.Constants.DATA_USERS
-import cmd.ushiramaru.weap.utils.User
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_signup.*
 import pci.syams.whatsappapp.R
+import pci.syams.whatsappapp.utils.Constants.DATA_USERS
+import pci.syams.whatsappapp.utils.User
 
 class SignupActivity : AppCompatActivity() {
 

@@ -45,14 +45,14 @@
         app:layout_constraintTop_toBottomOf="@id/app_bar_conversation" />
 
     <ImageButton
-        android:id="@+id/imbtn_send"
+        android:id="@+id/btn_send"
+        style="@style/StandardImageButton"
         android:layout_width="@dimen/dp50"
         android:layout_height="@dimen/dp50"
         android:layout_marginEnd="@dimen/dp4"
         android:layout_marginRight="@dimen/dp4"
         android:layout_marginBottom="@dimen/dp4"
-        style="@style/StandardImageButton"
-        android:src="@drawable/ic_send"
+        app:srcCompat="@drawable/ic_send"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -69,7 +69,7 @@
         android:minHeight="@dimen/dp50"
         android:paddingStart="@dimen/dp16"
         android:paddingEnd="@dimen/dp16"
-        app:layout_constraintBottom_toBottomOf="@id/imbtn_send"
-        app:layout_constraintEnd_toStartOf="@id/imbtn_send"
+        app:layout_constraintBottom_toBottomOf="@id/btn_send"
+        app:layout_constraintEnd_toStartOf="@id/btn_send"
         app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

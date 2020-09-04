@@ -1,4 +1,4 @@
-package pci.syams.whatsappapp.activites
+package idn.project_whatsapp.whatsapp.activities
 
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +18,8 @@ import kotlinx.android.synthetic.main.activity_login.progress_layout
 import kotlinx.android.synthetic.main.activity_login.til_email
 import kotlinx.android.synthetic.main.activity_login.til_password
 import pci.syams.whatsappapp.R
+import pci.syams.whatsappapp.activites.MainActivity
+import pci.syams.whatsappapp.activites.SignupActivity
 
 class LoginActivity : AppCompatActivity() {
 
